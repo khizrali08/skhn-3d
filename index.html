@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKhN · 3D печать</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f4f4f0;
+      min-height: 100vh;
+      color: #1a1a1a;
+      padding: 0 0 60px 0;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+    .header p  { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+    /* MODE TOGGLE (calc tab only) */
+    .mode-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
+    }
+
+    .mode-btn.active {
+      background: #fff;
+      color: #1a1a1a;
+    }
+
+    #screenshot-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    #screenshot-btn:hover { background: rgba(255,255,255,0.28); }
+    #screenshot-btn:active { transform: scale(0.95); }
+
+    /* ===== BOTTOM NAV ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-top: 1px solid #e8e8e8;
+      display: flex;
+      align-items: stretch;
+      z-index: 200;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 6px 0;
+      transition: color 0.15s;
+    }
+
+    .nav-btn svg { width: 20px; height: 20px; }
+
+    .nav-btn.active {
+      color: #1a1a1a;
+      font-weight: 700;
+    }
+
+    .nav-btn span { font-size: 11px; }
+
+    /* ===== TAB PANELS ===== */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== MAX-WIDTH CONTAINER ===== */
+    .page-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    /* ==================================================
+       CALCULATOR TAB STYLES
+       ================================================== */
+    .calc-body { padding: 24px 28px; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #aaa;
+      margin-bottom: 12px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; color: #666; font-weight: 500; }
+    .field .hint { font-size: 11px; color: #bbb; }
+
+    .input-wrap { position: relative; display: flex; align-items: center; }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a1a;
+      background: #fafafa;
+      transition: border-color 0.15s;
+      appearance: none;
+      -moz-appearance: textfield;
+    }
+
+    .input-wrap input::-webkit-inner-spin-button,
+    .input-wrap input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .input-wrap input:focus { outline: none; border-color: #1a1a1a; background: #fff; }
+
+    .unit { position: absolute; right: 9px; font-size: 11px; color: #bbb; pointer-events: none; }
+
+    .divider { border: none; border-top: 1.5px solid #f0f0f0; margin: 6px 0 18px; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      background: #f7f7f7;
+      border-radius: 9px;
+      margin-bottom: 10px;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: #1a1a1a;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    .toggle-label { font-size: 13px; color: #444; flex: 1; cursor: pointer; }
+
+    .toggle-inputs { display: flex; align-items: center; gap: 6px; }
+
+    .toggle-inputs input {
+      width: 54px; padding: 5px 7px;
+      border: 1.5px solid #e0e0e0; border-radius: 7px;
+      font-size: 13px; font-weight: 500; text-align: center;
+      background: #fff; appearance: none; -moz-appearance: textfield;
+    }
+
+    .toggle-inputs input::-webkit-inner-spin-button,
+    .toggle-inputs input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .toggle-inputs input:focus { outline: none; border-color: #1a1a1a; }
+    .toggle-inputs span { font-size: 12px; color: #888; }
+
+    .markup-row {
+      display: flex; align-items: center; gap: 10px; margin: 14px 0 10px;
+    }
+
+    .markup-label { font-size: 12px; color: #888; font-weight: 500; white-space: nowrap; }
+
+    .markup-row input[type="range"] {
+      flex: 1; accent-color: #1a1a1a; cursor: pointer;
+    }
+
+    .markup-row input[type="number"] {
+      width: 52px; padding: 5px 7px;
+      border: 1.5px solid #e0e0e0; border-radius: 7px;
+      font-size: 14px; font-weight: 600; text-align: center;
+      background: #fff; appearance: none; -moz-appearance: textfield;
+    }
+
+    .markup-row input[type="number"]::-webkit-inner-spin-button,
+    .markup-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .markup-row input[type="number"]:focus { outline: none; border-color: #1a1a1a; }
+    .markup-pct { font-size: 13px; color: #888; }
+
+    .result-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 9px; margin-bottom: 14px;
+    }
+
+    .metric {
+      background: #f7f7f7; border-radius: 9px;
+      padding: 11px 13px; transition: opacity 0.2s;
+    }
+
+    .metric-label { font-size: 11px; color: #888; margin-bottom: 3px; font-weight: 500; }
+    .metric-value { font-size: 17px; font-weight: 600; color: #1a1a1a; }
+
+    .metric.accent { background: #fff5e6; }
+    .metric.accent .metric-label { color: #b85c00; }
+    .metric.accent .metric-value { color: #b85c00; }
+
+    .cost-card {
+      background: #1a1a1a; border-radius: 12px;
+      padding: 18px 22px; display: flex;
+      align-items: center; gap: 14px;
+    }
+
+    .cost-left { flex: 1; }
+    .cost-right { flex: 1; text-align: right; }
+    .cost-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+    .cost-amount { font-size: 20px; font-weight: 700; color: #fff; }
+    .cost-profit { font-size: 12px; color: #5cb85c; margin-top: 3px; }
+    .arrow { font-size: 18px; color: rgba(255,255,255,0.2); }
+
+    .save-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      background: transparent;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #555;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .save-btn:hover { border-color: #1a1a1a; color: #1a1a1a; }
+    .save-btn:active { transform: scale(0.98); }
+
+    .history-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 13px;
+      border: 1.5px solid #f0f0f0;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .history-card:hover { border-color: #ccc; }
+
+    .history-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .history-info { flex: 1; min-width: 0; }
+
+    .history-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-meta {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    .history-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+      white-space: nowrap;
+    }
+
+    .history-date {
+      font-size: 10px;
+      color: #ccc;
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    .history-del {
+      font-size: 16px;
+      color: #ddd;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .history-del:hover { color: #999; }
+
+    /* CUSTOMER VIEW */
+    #view-customer { display: none; }
+
+    .receipt { margin: 0; }
+
+    .receipt-header {
+      text-align: center;
+      padding: 32px 28px 24px;
+      border-bottom: 1.5px solid #f0f0f0;
+    }
+
+    .receipt-icon {
+      width: 52px; height: 52px;
+      background: #1a1a1a; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      font-size: 24px;
+    }
+
+    .receipt-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .receipt-subtitle { font-size: 13px; color: #888; }
+
+    .receipt-params {
+      display: flex; justify-content: center; gap: 24px;
+      padding: 18px 28px;
+      border-bottom: 1.5px solid #f0f0f0;
+    }
+
+    .param-item { text-align: center; }
+    .param-value { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+    .param-label { font-size: 11px; color: #aaa; margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .receipt-price-section {
+      padding: 28px;
+      text-align: center;
+    }
+
+    .price-label { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; }
+
+    .price-amount {
+      font-size: 56px; font-weight: 700; color: #1a1a1a; letter-spacing: -2px; line-height: 1;
+    }
+
+    .price-currency { font-size: 24px; font-weight: 400; color: #888; vertical-align: super; margin-right: 4px; letter-spacing: 0; }
+
+    .receipt-note { font-size: 13px; color: #aaa; margin-top: 10px; }
+
+    .receipt-footer {
+      padding: 16px 28px;
+      background: #f7f7f7;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .receipt-footer-left { font-size: 12px; color: #aaa; }
+    .receipt-footer-right { font-size: 12px; color: #bbb; }
+
+    .calc-footer {
+      padding: 14px 28px;
+      text-align: center;
+      font-size: 11px;
+      color: #ccc;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    #screenshot-toast {
+      display: none;
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 20px;
+      z-index: 999;
+      white-space: nowrap;
+    }
+
+    /* ==================================================
+       ORDERS TAB STYLES
+       ================================================== */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 16px 20px;
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 8px;
+      background: #f7f7f7;
+    }
+
+    .stat-value { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+    .stat-label { font-size: 10px; color: #aaa; margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    .stat.s-new    .stat-value { color: #888; }
+    .stat.s-print  .stat-value { color: #e67e00; }
+    .stat.s-done   .stat-value { color: #2196F3; }
+    .stat.s-given  .stat-value { color: #4caf50; }
+
+    .filters {
+      display: flex; gap: 8px; padding: 14px 20px;
+      overflow-x: auto; background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .filter-btn {
+      border: 1.5px solid #e8e8e8; background: #fff;
+      border-radius: 20px; padding: 5px 14px;
+      font-size: 12px; font-weight: 500; color: #666;
+      cursor: pointer; white-space: nowrap; transition: all 0.15s;
+    }
+
+    .filter-btn.active {
+      background: #1a1a1a; border-color: #1a1a1a; color: #fff;
+    }
+
+    .orders-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: #bbb;
+    }
+
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    .order-card {
+      background: #fff; border-radius: 12px;
+      border: 1.5px solid #f0f0f0;
+      overflow: hidden; transition: border-color 0.15s;
+    }
+
+    .order-card:hover { border-color: #ddd; }
+
+    .order-top {
+      display: flex; align-items: center;
+      gap: 12px; padding: 14px 16px;
+    }
+
+    .order-dot {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    .order-info { flex: 1; min-width: 0; }
+
+    .order-name {
+      font-size: 14px; font-weight: 600; color: #1a1a1a;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .order-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .order-price {
+      font-size: 16px; font-weight: 700; color: #1a1a1a;
+      white-space: nowrap;
+    }
+
+    .order-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-top: 1px solid #f5f5f5;
+      background: #fafafa;
+    }
+
+    .customer-name { font-size: 13px; color: #444; font-weight: 500; }
+    .customer-date { font-size: 11px; color: #bbb; margin-top: 1px; }
+
+    .status-btns { display: flex; gap: 6px; }
+
+    .status-btn {
+      border: 1.5px solid #e8e8e8; background: #fff;
+      border-radius: 6px; padding: 4px 10px;
+      font-size: 11px; font-weight: 500; color: #666;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+
+    .status-btn:hover { border-color: #bbb; }
+
+    .status-btn.active-new    { background: #f0f0f0; border-color: #ccc; color: #555; }
+    .status-btn.active-print  { background: #fff3e0; border-color: #e67e00; color: #e67e00; }
+    .status-btn.active-done   { background: #e3f2fd; border-color: #2196F3; color: #2196F3; }
+    .status-btn.active-given  { background: #e8f5e9; border-color: #4caf50; color: #4caf50; }
+
+    .del-btn {
+      background: none; border: none; color: #ddd;
+      font-size: 18px; cursor: pointer; padding: 0 4px;
+      line-height: 1; transition: color 0.15s;
+    }
+
+    .del-btn:hover { color: #e53935; }
+
+    .pay-btn {
+      border: none; border-radius: 6px;
+      padding: 4px 10px; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+
+    .pay-unpaid  { background: #ffeaea; color: #e53935; }
+    .pay-paid    { background: #e8f5e9; color: #4caf50; }
+    .pay-partial { background: #fff8e1; color: #f59f00; }
+
+    /* Orders header add btn */
+    .orders-header-add {
+      display: flex; align-items: center; gap: 6px;
+      background: #fff; color: #1a1a1a;
+      border: none; border-radius: 8px;
+      padding: 8px 14px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
+    }
+    .orders-header-add:hover { opacity: 0.85; }
+
+    /* ==================================================
+       FINANCE TAB STYLES
+       ================================================== */
+    .summary {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0; background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .sum-card {
+      padding: 18px 20px;
+      border-right: 1px solid #f0f0f0;
+    }
+
+    .sum-card:last-child { border-right: none; }
+
+    .sum-label { font-size: 11px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .sum-value { font-size: 22px; font-weight: 700; }
+    .sum-value.income  { color: #4caf50; }
+    .sum-value.expense { color: #e53935; }
+    .sum-value.profit  { color: #1a1a1a; }
+    .sum-sub { font-size: 11px; color: #bbb; margin-top: 3px; }
+
+    .finance-tabs {
+      display: flex; background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .finance-tab {
+      flex: 1; padding: 13px; text-align: center;
+      font-size: 13px; font-weight: 600; color: #aaa;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .finance-tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+    .finance-tab-content { display: none; padding: 16px 20px; }
+    .finance-tab-content.active { display: block; }
+
+    .fin-card {
+      background: #fff; border-radius: 12px;
+      border: 1.5px solid #f0f0f0;
+      margin-bottom: 10px; overflow: hidden;
+    }
+
+    .card-row {
+      display: flex; align-items: center;
+      gap: 12px; padding: 13px 16px;
+    }
+
+    .cat-badge {
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+
+    .cat-filament { background: #e3f2fd; color: #1976D2; }
+    .cat-cargo    { background: #f3e5f5; color: #7b1fa2; }
+    .cat-parts    { background: #fff3e0; color: #e67e00; }
+    .cat-other    { background: #f5f5f5; color: #666; }
+
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .card-amount { font-size: 15px; font-weight: 700; color: #e53935; white-space: nowrap; }
+    .card-amount.income-amt { color: #4caf50; }
+
+    .spool-card {
+      background: #fff; border-radius: 12px;
+      border: 1.5px solid #f0f0f0;
+      margin-bottom: 10px; overflow: hidden;
+    }
+
+    .spool-top {
+      display: flex; align-items: center;
+      gap: 12px; padding: 13px 16px;
+    }
+
+    .spool-dot {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    .spool-info { flex: 1; }
+    .spool-name { font-size: 14px; font-weight: 600; }
+    .spool-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .spool-bottom {
+      padding: 10px 16px; border-top: 1px solid #f5f5f5;
+      background: #fafafa; display: flex; align-items: center; gap: 12px;
+    }
+
+    .progress-wrap { flex: 1; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: #aaa; margin-bottom: 5px;
+    }
+
+    .progress-bar {
+      height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%; border-radius: 3px; transition: width 0.3s;
+    }
+
+    .spool-cost { font-size: 12px; color: #aaa; white-space: nowrap; }
+
+    /* Finance add btn */
+    .finance-header-add {
+      display: flex; align-items: center; gap: 6px;
+      background: #fff; color: #1a1a1a;
+      border: none; border-radius: 8px;
+      padding: 8px 14px; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+    }
+    .finance-header-add:hover { opacity: 0.85; }
+
+    /* ==================================================
+       MODALS (shared)
+       ================================================== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 300;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff; border-radius: 16px;
+      width: 100%; max-width: 460px;
+      max-height: 90vh; overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .modal-title { font-size: 16px; font-weight: 600; }
+
+    .modal-close {
+      background: none; border: none; font-size: 22px;
+      color: #aaa; cursor: pointer; line-height: 1;
+    }
+
+    .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-field.full { grid-column: 1 / -1; }
+
+    .form-field label { font-size: 12px; color: #666; font-weight: 500; }
+
+    .form-field input, .form-field select, .form-field textarea {
+      padding: 9px 11px;
+      border: 1.5px solid #e8e8e8; border-radius: 8px;
+      font-size: 14px; color: #1a1a1a; background: #fafafa;
+      font-family: inherit;
+      appearance: none;
+      -moz-appearance: textfield;
+    }
+
+    .form-field input::-webkit-inner-spin-button,
+    .form-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+      outline: none; border-color: #1a1a1a; background: #fff;
+    }
+
+    .form-field textarea { resize: vertical; min-height: 60px; appearance: auto; }
+
+    .color-row { display: flex; gap: 8px; align-items: center; }
+
+    .color-row input[type="color"] {
+      width: 42px; height: 38px; padding: 2px;
+      border: 1.5px solid #e8e8e8; border-radius: 8px;
+      background: #fafafa; cursor: pointer;
+      appearance: auto;
+    }
+
+    .color-row input[type="text"] { flex: 1; }
+
+    .modal-footer {
+      padding: 16px 22px;
+      border-top: 1px solid #f0f0f0;
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      padding: 9px 18px; background: #f5f5f5; border: none;
+      border-radius: 8px; font-size: 14px; color: #666;
+      cursor: pointer; font-weight: 500;
+    }
+
+    .btn-save {
+      padding: 9px 22px; background: #1a1a1a; border: none;
+      border-radius: 8px; font-size: 14px; color: #fff;
+      cursor: pointer; font-weight: 500;
+    }
+
+    .btn-save:hover { opacity: 0.85; }
+
+    /* ==================================================
+       RESPONSIVE
+       ================================================== */
+    @media (max-width: 480px) {
+      .calc-body { padding: 20px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .cost-card { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .receipt-params { gap: 16px; }
+      .price-amount { font-size: 44px; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .form-row { grid-template-columns: 1fr; }
+      .status-btns { flex-wrap: wrap; }
+      .summary { grid-template-columns: 1fr; }
+      .sum-card { border-right: none; border-bottom: 1px solid #f0f0f0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div onclick="if(currentMode==='customer')setMode('owner')" style="cursor:pointer;">
+    <h1>SKhN</h1>
+    <p id="header-subtitle">3D печать</p>
+  </div>
+  <!-- Screenshot btn (customer mode only) -->
+  <button id="screenshot-btn" onclick="takeScreenshot()" title="Скопировать как фото" style="display:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+  </button>
+  <!-- Mode toggle (calc tab only) -->
+  <div class="mode-toggle" id="mode-toggle">
+    <button class="mode-btn active" onclick="setMode('owner')">Мой расчёт</button>
+    <button class="mode-btn" onclick="setMode('customer')">Для клиента</button>
+  </div>
+  <!-- Orders add btn (orders tab only) -->
+  <button class="orders-header-add" id="orders-header-add" onclick="openOrderModal()" style="display:none;">+ Новый заказ</button>
+  <!-- Finance add btn (finance tab only) -->
+  <button class="finance-header-add" id="finance-header-add" onclick="openActiveFinanceModal()" style="display:none;">+ Расход</button>
+</div>
+
+<!-- ===== TAB: CALCULATOR ===== -->
+<div class="tab-panel active" id="panel-calc">
+  <div class="page-wrap">
+
+    <!-- OWNER VIEW -->
+    <div id="view-owner">
+      <div class="calc-body">
+
+        <div class="section-title">Параметры детали</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Расход пластика</label>
+            <div class="input-wrap">
+              <input type="number" id="weight" value="300" min="1" oninput="calc()">
+              <span class="unit">г</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Время печати</label>
+            <div class="input-wrap">
+              <input type="number" id="hours" value="15" min="0.5" step="0.5" oninput="calc()">
+              <span class="unit">ч</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Название детали</label>
+            <div class="input-wrap">
+              <input type="text" id="itemName" value="Держатель стакана" oninput="calc()" style="padding-right:12px;">
+            </div>
+          </div>
+          <div class="field">
+            <label>Материал</label>
+            <div class="input-wrap">
+              <input type="text" id="material" value="PETG" oninput="calc()" style="padding-right:12px;">
+            </div>
+          </div>
+          <div class="field">
+            <label>Цвет филамента</label>
+            <div class="input-wrap" style="gap:8px;">
+              <input type="color" id="filamentColor" value="#1565C0" oninput="calc()" style="width:42px;height:38px;padding:2px;border:1.5px solid #e8e8e8;border-radius:8px;background:#fafafa;cursor:pointer;">
+              <input type="text" id="colorName" value="Синий" oninput="calc()" style="flex:1;padding:9px 11px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-weight:500;color:#1a1a1a;background:#fafafa;">
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Расходы</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Цена филамента</label>
+            <div class="input-wrap">
+              <input type="number" id="filament" value="90" min="1" oninput="calc()">
+              <span class="unit">сом/кг</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Электричество</label>
+            <div class="input-wrap">
+              <input type="number" id="electricity" value="0.4137" min="0.01" step="0.0001" oninput="calc()">
+              <span class="unit">сом/кВт·ч</span>
+            </div>
+            <span class="hint">тариф с 01.02.2026</span>
+          </div>
+          <div class="field">
+            <label>Амортизация принтера</label>
+            <div class="input-wrap">
+              <input type="number" id="deprRate" value="0.65" min="0.1" step="0.05" oninput="calc()">
+              <span class="unit">сом/ч</span>
+            </div>
+            <span class="hint">износ за 1 час работы</span>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="toggle-row">
+          <input type="checkbox" id="inclMaint" onchange="calc()" checked>
+          <label class="toggle-label" for="inclMaint">Обслуживание (сопла, ремни, смазка)</label>
+          <div class="toggle-inputs">
+            <input type="number" id="maintRate" value="0.5" min="0.1" step="0.1" oninput="calc()">
+            <span>сом/ч</span>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <input type="checkbox" id="inclLabor" onchange="calc()">
+          <label class="toggle-label" for="inclLabor">Труд оператора</label>
+          <div class="toggle-inputs">
+            <input type="number" id="laborHours" value="1.5" min="0.5" step="0.5" oninput="calc()">
+            <span>ч ×</span>
+            <input type="number" id="laborRate" value="20" min="1" oninput="calc()">
+            <span>сом</span>
+          </div>
+        </div>
+
+        <div class="markup-row">
+          <span class="markup-label">Наценка</span>
+          <input type="range" id="markupSlider" min="0" max="100" value="30" step="5" oninput="syncMarkup('slider')">
+          <input type="number" id="markupInput" value="30" min="0" max="100" step="5" oninput="syncMarkup('input')">
+          <span class="markup-pct">%</span>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section-title">Результат</div>
+        <div class="result-grid">
+          <div class="metric">
+            <div class="metric-label">Пластик</div>
+            <div class="metric-value" id="r-material">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Электричество</div>
+            <div class="metric-value" id="r-elec">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Амортизация</div>
+            <div class="metric-value" id="r-depr">—</div>
+          </div>
+          <div class="metric" id="maint-card">
+            <div class="metric-label">Обслуживание</div>
+            <div class="metric-value" id="r-maint">—</div>
+          </div>
+          <div class="metric" id="labor-card">
+            <div class="metric-label">Труд оператора</div>
+            <div class="metric-value" id="r-labor">—</div>
+          </div>
+          <div class="metric accent">
+            <div class="metric-label">Наценка</div>
+            <div class="metric-value" id="r-markup">—</div>
+          </div>
+        </div>
+
+        <div class="cost-card">
+          <div class="cost-left">
+            <div class="cost-label">Себестоимость</div>
+            <div class="cost-amount" id="r-cost">—</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="cost-right">
+            <div class="cost-label">Цена для клиента</div>
+            <div class="cost-amount" id="r-total" style="font-size:28px;">—</div>
+            <div class="cost-profit" id="r-profit"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="save-btn" id="save-history-btn" onclick="saveToHistory()" style="margin:0;flex:1;">Сохранить в историю</button>
+          <button class="save-btn" onclick="sendToOrders()" style="margin:0;flex:1;background:#1a1a1a;color:#fff;border-color:#1a1a1a;">Добавить в заказы →</button>
+        </div>
+
+        <div id="history-section" style="display:none;">
+          <hr class="divider" style="margin-top:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div class="section-title" style="margin:0;">История заказов</div>
+            <button onclick="clearHistory()" style="font-size:11px;color:#aaa;background:none;border:none;cursor:pointer;padding:0;">Очистить</button>
+          </div>
+          <div id="history-list"></div>
+        </div>
+
+      </div>
+      <div class="calc-footer">SKhN · 3D печать</div>
+    </div>
+
+    <!-- CUSTOMER VIEW -->
+    <div id="view-customer">
+      <div class="receipt" id="receipt-capture">
+        <div class="receipt-header">
+          <div id="receipt-icon" style="width:52px;height:52px;border-radius:50%;background:#1565C0;margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,0.15);"></div>
+          <div class="receipt-title" id="c-name">Держатель стакана</div>
+          <div class="receipt-subtitle" id="c-material">Материал: PETG · <span id="c-colorname">Синий</span></div>
+        </div>
+        <div class="receipt-params">
+          <div class="param-item">
+            <div class="param-value" id="c-weight">—</div>
+            <div class="param-label">граммов</div>
+          </div>
+          <div class="param-item">
+            <div class="param-value" id="c-hours">—</div>
+            <div class="param-label">часов печати</div>
+          </div>
+        </div>
+        <div class="receipt-price-section">
+          <div class="price-label">Стоимость</div>
+          <div class="price-amount">
+            <span id="c-total">—</span><span class="price-currency">TJS</span>
+          </div>
+          <div class="receipt-note">Включает материал, электричество и обслуживание оборудования</div>
+        </div>
+        <div class="receipt-footer">
+          <div class="receipt-footer-left">SKhN · 3D печать</div>
+          <div class="receipt-footer-right" id="c-date"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== TAB: ORDERS ===== -->
+<div class="tab-panel" id="panel-orders">
+  <div class="page-wrap" style="border-radius:0;">
+
+    <div class="stats-bar">
+      <div class="stat s-new">
+        <div class="stat-value" id="st-new">0</div>
+        <div class="stat-label">Новые</div>
+      </div>
+      <div class="stat s-print">
+        <div class="stat-value" id="st-print">0</div>
+        <div class="stat-label">Печать</div>
+      </div>
+      <div class="stat s-done">
+        <div class="stat-value" id="st-done">0</div>
+        <div class="stat-label">Готовы</div>
+      </div>
+      <div class="stat s-given">
+        <div class="stat-value" id="st-given">0</div>
+        <div class="stat-label">Отданы</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="setOrderFilter('all', this)">Все</button>
+      <button class="filter-btn" onclick="setOrderFilter('new', this)">Новые</button>
+      <button class="filter-btn" onclick="setOrderFilter('print', this)">Печатается</button>
+      <button class="filter-btn" onclick="setOrderFilter('done', this)">Готово</button>
+      <button class="filter-btn" onclick="setOrderFilter('given', this)">Отдано</button>
+    </div>
+
+    <div class="orders-list" id="orders-list"></div>
+
+  </div>
+</div>
+
+<!-- ===== TAB: FINANCE ===== -->
+<div class="tab-panel" id="panel-finance">
+  <div class="page-wrap" style="border-radius:0;">
+
+    <div class="summary">
+      <div class="sum-card">
+        <div class="sum-label">Выручка</div>
+        <div class="sum-value income" id="s-income">0 TJS</div>
+        <div class="sum-sub" id="s-income-sub">оплаченные заказы</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">Расходы</div>
+        <div class="sum-value expense" id="s-expense">0 TJS</div>
+        <div class="sum-sub" id="s-expense-sub">материалы и обслуживание</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">Прибыль</div>
+        <div class="sum-value profit" id="s-profit">0 TJS</div>
+        <div class="sum-sub" id="s-profit-sub">выручка − расходы</div>
+      </div>
+    </div>
+
+    <div class="finance-tabs">
+      <div class="finance-tab active" onclick="switchFinanceTab('expenses', this)">Расходы</div>
+      <div class="finance-tab" onclick="switchFinanceTab('inventory', this)">Склад</div>
+    </div>
+
+    <div class="finance-tab-content active" id="fin-tab-expenses">
+      <div id="expenses-list"></div>
+    </div>
+
+    <div class="finance-tab-content" id="fin-tab-inventory">
+      <div id="inventory-list"></div>
+    </div>
+
+    <div style="padding:12px 20px;border-top:1px solid #f0f0f0;display:flex;gap:8px;justify-content:flex-end;">
+      <label style="cursor:pointer;font-size:12px;color:#888;padding:6px 14px;border:1.5px solid #e8e8e8;border-radius:8px;background:#fff;font-weight:500;">↑ Импорт<input type="file" accept=".json" style="display:none" onchange="importData(this)"></label>
+      <button onclick="exportData()" style="font-size:12px;color:#888;padding:6px 14px;border:1.5px solid #e8e8e8;border-radius:8px;background:#fff;cursor:pointer;font-weight:500;font-family:inherit;">↓ Экспорт</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-calc" onclick="switchToTab('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+      <line x1="9" y1="9" x2="15" y2="9"/>
+      <line x1="9" y1="13" x2="15" y2="13"/>
+      <line x1="9" y1="17" x2="12" y2="17"/>
+    </svg>
+    <span>Калькулятор</span>
+  </button>
+  <button class="nav-btn" id="nav-orders" onclick="switchToTab('orders')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="1"/>
+      <line x1="9" y1="12" x2="15" y2="12"/>
+      <line x1="9" y1="16" x2="13" y2="16"/>
+    </svg>
+    <span>Заказы</span>
+  </button>
+  <button class="nav-btn" id="nav-finance" onclick="switchToTab('finance')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    <span>Финансы</span>
+  </button>
+</nav>
+
+<!-- ===== ORDER MODAL ===== -->
+<div class="modal-overlay" id="modal-order">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="order-modal-title">Новый заказ</div>
+      <button class="modal-close" onclick="closeOrderModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field full">
+          <label>Имя заказчика</label>
+          <input type="text" id="f-customer" placeholder="Например: Алишер">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field full">
+          <label>Название детали</label>
+          <input type="text" id="f-name" placeholder="Например: Mug Holder">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Материал</label>
+          <input type="text" id="f-material" placeholder="PETG, PLA...">
+        </div>
+        <div class="form-field">
+          <label>Цвет</label>
+          <div class="color-row">
+            <input type="color" id="f-color" value="#1565C0">
+            <input type="text" id="f-colorname" placeholder="Синий">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Вес (г)</label>
+          <input type="number" id="f-weight" placeholder="265">
+        </div>
+        <div class="form-field">
+          <label>Время печати (ч)</label>
+          <input type="number" id="f-hours" placeholder="12.4" step="0.1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Цена (TJS)</label>
+          <input type="number" id="f-price" placeholder="69">
+        </div>
+        <div class="form-field">
+          <label>Статус</label>
+          <select id="f-status">
+            <option value="new">Новый</option>
+            <option value="print">Печатается</option>
+            <option value="done">Готово</option>
+            <option value="given">Отдано</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Оплата</label>
+          <select id="f-payment">
+            <option value="unpaid">Не оплачено</option>
+            <option value="partial">Частично</option>
+            <option value="paid">Оплачено</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field full">
+          <label>Заметки</label>
+          <textarea id="f-notes" placeholder="Дополнительная информация..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeOrderModal()">Отмена</button>
+      <button class="btn-save" onclick="saveOrder()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPENSE MODAL ===== -->
+<div class="modal-overlay" id="modal-expense">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Новый расход</div>
+      <button class="modal-close" onclick="closeFinanceModal('expense')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field full">
+          <label>Описание</label>
+          <input type="text" id="e-desc" placeholder="Например: PETG катушка 6шт из Китая">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Категория</label>
+          <select id="e-cat">
+            <option value="filament">Филамент</option>
+            <option value="cargo">Карго / доставка</option>
+            <option value="parts">Запчасти / обслуживание</option>
+            <option value="other">Другое</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Сумма (TJS)</label>
+          <input type="number" id="e-amount" placeholder="460">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field full">
+          <label>Дата</label>
+          <input type="date" id="e-date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeFinanceModal('expense')">Отмена</button>
+      <button class="btn-save" onclick="saveExpense()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SPOOL MODAL ===== -->
+<div class="modal-overlay" id="modal-spool">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Добавить катушку</div>
+      <button class="modal-close" onclick="closeFinanceModal('spool')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Материал</label>
+          <input type="text" id="sp-material" placeholder="PETG, PLA...">
+        </div>
+        <div class="form-field">
+          <label>Цвет</label>
+          <div class="color-row">
+            <input type="color" id="sp-color" value="#1565C0">
+            <input type="text" id="sp-colorname" placeholder="Синий">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Остаток (г)</label>
+          <input type="number" id="sp-remaining" placeholder="1000">
+        </div>
+        <div class="form-field">
+          <label>Всего (г)</label>
+          <input type="number" id="sp-total" placeholder="1000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Стоимость катушки (TJS)</label>
+          <input type="number" id="sp-cost" placeholder="90">
+        </div>
+        <div class="form-field">
+          <label>Дата покупки</label>
+          <input type="date" id="sp-date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeFinanceModal('spool')">Отмена</button>
+      <button class="btn-save" onclick="saveSpool()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="screenshot-toast">Скопировано в буфер!</div>
+
+<script>
+  /* ======================================================
+     TAB NAVIGATION
+     ====================================================== */
+  var currentTab = 'calc';
+
+  function switchToTab(tab) {
+    currentTab = tab;
+
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    // Show target
+    document.getElementById('panel-' + tab).classList.add('active');
+
+    // Update nav buttons
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('nav-' + tab).classList.add('active');
+
+    // Header right side
+    document.getElementById('mode-toggle').style.display      = (tab === 'calc' && currentMode === 'owner') ? 'flex' : 'none';
+    document.getElementById('screenshot-btn').style.display   = (tab === 'calc' && currentMode === 'customer') ? 'flex' : 'none';
+    document.getElementById('orders-header-add').style.display = tab === 'orders'  ? 'flex' : 'none';
+    document.getElementById('finance-header-add').style.display = tab === 'finance' ? 'flex' : 'none';
+
+    // Update subtitle
+    var subtitles = { calc: '3D печать', orders: 'Журнал заказов', finance: 'Финансы и склад' };
+    document.getElementById('header-subtitle').textContent = subtitles[tab];
+
+    // Render data when switching
+    if (tab === 'orders')  renderOrders();
+    if (tab === 'finance') renderFinance();
+  }
+
+  /* ======================================================
+     CALCULATOR
+     ====================================================== */
+  var currentMode = 'owner';
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('view-owner').style.display    = mode === 'owner'    ? 'block' : 'none';
+    document.getElementById('view-customer').style.display = mode === 'customer' ? 'block' : 'none';
+    // Only show toggle when in calc tab
+    if (currentTab === 'calc') {
+      document.getElementById('mode-toggle').style.display    = mode === 'owner'    ? 'flex'  : 'none';
+      document.getElementById('screenshot-btn').style.display = mode === 'customer' ? 'flex'  : 'none';
+    }
+    document.querySelectorAll('.mode-btn').forEach(function(b) {
+      b.classList.toggle('active', b.textContent.includes(mode === 'owner' ? 'Мой' : 'клиент'));
+    });
+    calc();
+  }
+
+  function syncMarkup(src) {
+    var s = document.getElementById('markupSlider');
+    var i = document.getElementById('markupInput');
+    if (src === 'slider') i.value = s.value; else s.value = i.value;
+    calc();
+  }
+
+  function fmt(n) { return n.toFixed(1) + ' сом'; }
+
+  function calc() {
+    var w   = parseFloat(document.getElementById('weight').value)      || 0;
+    var h   = parseFloat(document.getElementById('hours').value)       || 0;
+    var f   = parseFloat(document.getElementById('filament').value)    || 0;
+    var dr  = parseFloat(document.getElementById('deprRate').value)    || 0;
+    var e   = parseFloat(document.getElementById('electricity').value) || 0;
+    var pct = parseFloat(document.getElementById('markupInput').value) || 0;
+
+    var inclM = document.getElementById('inclMaint').checked;
+    var mr    = parseFloat(document.getElementById('maintRate').value)  || 0;
+    var inclL = document.getElementById('inclLabor').checked;
+    var lh    = parseFloat(document.getElementById('laborHours').value) || 0;
+    var lr    = parseFloat(document.getElementById('laborRate').value)  || 0;
+
+    var mat    = (w / 1000) * f;
+    var elec   = h * 0.175 * e;
+    var depr   = dr * h;
+    var maint  = inclM ? mr * h : 0;
+    var labor  = inclL ? lh * lr : 0;
+    var cost   = mat + elec + depr + maint + labor;
+    var markup = cost * (pct / 100);
+    var total  = cost + markup;
+
+    document.getElementById('r-material').textContent = fmt(mat);
+    document.getElementById('r-elec').textContent     = fmt(elec);
+    document.getElementById('r-depr').textContent     = fmt(depr);
+    document.getElementById('r-maint').textContent    = fmt(maint);
+    document.getElementById('r-labor').textContent    = fmt(labor);
+    document.getElementById('r-markup').textContent   = fmt(markup);
+    document.getElementById('maint-card').style.opacity = inclM ? '1' : '0.35';
+    document.getElementById('labor-card').style.opacity = inclL ? '1' : '0.35';
+    document.getElementById('r-cost').textContent  = Math.round(cost)  + ' сом';
+    document.getElementById('r-total').textContent = Math.round(total) + ' сом';
+    document.getElementById('r-profit').textContent = pct > 0 ? '+ ' + fmt(markup) + ' прибыль' : '';
+
+    var name  = document.getElementById('itemName').value    || '3D деталь';
+    var mat2  = document.getElementById('material').value    || '';
+    var color = document.getElementById('filamentColor').value;
+    var cname = document.getElementById('colorName').value   || '';
+    document.getElementById('c-name').textContent      = name;
+    document.getElementById('c-material').innerHTML    = 'Материал: ' + mat2 + ' · <span id="c-colorname">' + cname + '</span>';
+    document.getElementById('receipt-icon').style.background   = color;
+    document.getElementById('receipt-icon').style.boxShadow    = '0 4px 20px ' + color + '88';
+    document.getElementById('c-weight').textContent   = w + ' г';
+    document.getElementById('c-hours').textContent    = h;
+    document.getElementById('c-total').textContent    = Math.round(total);
+
+    var now = new Date();
+    document.getElementById('c-date').textContent =
+      now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function getCalcFormData() {
+    return {
+      weight:    document.getElementById('weight').value,
+      hours:     document.getElementById('hours').value,
+      itemName:  document.getElementById('itemName').value,
+      material:  document.getElementById('material').value,
+      filamentColor: document.getElementById('filamentColor').value,
+      colorName: document.getElementById('colorName').value,
+      filament:  document.getElementById('filament').value,
+      electricity: document.getElementById('electricity').value,
+      deprRate:  document.getElementById('deprRate').value,
+      inclMaint: document.getElementById('inclMaint').checked,
+      maintRate: document.getElementById('maintRate').value,
+      inclLabor: document.getElementById('inclLabor').checked,
+      laborHours: document.getElementById('laborHours').value,
+      laborRate: document.getElementById('laborRate').value,
+      markup:    document.getElementById('markupInput').value
+    };
+  }
+
+  function loadCalcFormData(d) {
+    document.getElementById('weight').value       = d.weight;
+    document.getElementById('hours').value        = d.hours;
+    document.getElementById('itemName').value     = d.itemName;
+    document.getElementById('material').value     = d.material;
+    document.getElementById('filamentColor').value= d.filamentColor;
+    document.getElementById('colorName').value    = d.colorName;
+    document.getElementById('filament').value     = d.filament;
+    document.getElementById('electricity').value  = d.electricity;
+    document.getElementById('deprRate').value     = d.deprRate;
+    document.getElementById('inclMaint').checked  = d.inclMaint;
+    document.getElementById('maintRate').value    = d.maintRate;
+    document.getElementById('inclLabor').checked  = d.inclLabor;
+    document.getElementById('laborHours').value   = d.laborHours;
+    document.getElementById('laborRate').value    = d.laborRate;
+    document.getElementById('markupInput').value  = d.markup;
+    document.getElementById('markupSlider').value = d.markup;
+    calc();
+  }
+
+  function sendToOrders() {
+    var data = getCalcFormData();
+    var w   = parseFloat(data.weight) || 0;
+    var h   = parseFloat(data.hours) || 0;
+    var f   = parseFloat(data.filament) || 0;
+    var dr  = parseFloat(data.deprRate) || 0;
+    var e   = parseFloat(data.electricity) || 0;
+    var pct = parseFloat(data.markup) || 0;
+    var mr  = data.inclMaint ? parseFloat(data.maintRate) || 0 : 0;
+    var lh  = data.inclLabor ? parseFloat(data.laborHours) || 0 : 0;
+    var lr  = data.inclLabor ? parseFloat(data.laborRate) || 0 : 0;
+    var cost  = (w/1000)*f + h*0.175*e + dr*h + mr*h + lh*lr;
+    var total = Math.round(cost * (1 + pct/100));
+
+    // Switch to orders tab
+    switchToTab('orders');
+
+    // Open modal with pre-filled data
+    openOrderModal();
+    setTimeout(function() {
+      document.getElementById('f-name').value      = data.itemName  || '';
+      document.getElementById('f-material').value  = data.material  || '';
+      document.getElementById('f-color').value     = data.filamentColor || '#1565C0';
+      document.getElementById('f-colorname').value = data.colorName || '';
+      document.getElementById('f-weight').value    = data.weight    || '';
+      document.getElementById('f-hours').value     = data.hours     || '';
+      document.getElementById('f-price').value     = total          || '';
+      document.getElementById('f-customer').focus();
+    }, 80);
+  }
+
+  function saveToHistory() {
+    var data = getCalcFormData();
+    var w = parseFloat(data.weight) || 0;
+    var h = parseFloat(data.hours) || 0;
+    var f = parseFloat(data.filament) || 0;
+    var dr = parseFloat(data.deprRate) || 0;
+    var e = parseFloat(data.electricity) || 0;
+    var pct = parseFloat(data.markup) || 0;
+    var mr = data.inclMaint ? parseFloat(data.maintRate) || 0 : 0;
+    var lh = data.inclLabor ? parseFloat(data.laborHours) || 0 : 0;
+    var lr = data.inclLabor ? parseFloat(data.laborRate) || 0 : 0;
+    var cost = (w/1000)*f + h*0.175*e + dr*h + mr*h + lh*lr;
+    var total = Math.round(cost * (1 + pct/100));
+
+    var entry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }),
+      total: total,
+      data: data
+    };
+
+    var history = JSON.parse(localStorage.getItem('print_history') || '[]');
+    history.unshift(entry);
+    if (history.length > 50) history = history.slice(0, 50);
+    localStorage.setItem('print_history', JSON.stringify(history));
+
+    renderHistory();
+    var btn = document.getElementById('save-history-btn');
+    btn.textContent = 'Сохранено ✓';
+    setTimeout(function() { btn.textContent = 'Сохранить в историю'; }, 1500);
+  }
+
+  function deleteFromHistory(id) {
+    var history = JSON.parse(localStorage.getItem('print_history') || '[]');
+    history = history.filter(function(e) { return e.id !== id; });
+    localStorage.setItem('print_history', JSON.stringify(history));
+    renderHistory();
+  }
+
+  function clearHistory() {
+    if (confirm('Очистить всю историю?')) {
+      localStorage.removeItem('print_history');
+      renderHistory();
+    }
+  }
+
+  function renderHistory() {
+    var history = JSON.parse(localStorage.getItem('print_history') || '[]');
+    var section = document.getElementById('history-section');
+    var list    = document.getElementById('history-list');
+    if (history.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    list.innerHTML = '';
+    history.forEach(function(entry) {
+      var d = entry.data;
+      var card = document.createElement('div');
+      card.className = 'history-card';
+      card.innerHTML =
+        '<div class="history-dot" style="background:' + d.filamentColor + ';box-shadow:0 2px 8px ' + d.filamentColor + '66;"></div>' +
+        '<div class="history-info">' +
+          '<div class="history-name">' + (d.itemName || '3D деталь') + '</div>' +
+          '<div class="history-meta">' + d.material + ' · ' + d.colorName + ' · ' + d.weight + 'г · ' + d.hours + 'ч</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div class="history-price">' + entry.total + ' сом</div>' +
+          '<div class="history-date">' + entry.date + '</div>' +
+        '</div>' +
+        '<button class="history-del" title="Удалить">×</button>';
+
+      card.querySelector('.history-del').onclick = function(ev) {
+        ev.stopPropagation();
+        deleteFromHistory(entry.id);
+      };
+      card.onclick = function() { loadCalcFormData(d); };
+      list.appendChild(card);
+    });
+  }
+
+  function takeScreenshot() {
+    var el = document.getElementById('receipt-capture');
+    html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(function(canvas) {
+      canvas.toBlob(function(blob) {
+        var item = new ClipboardItem({ 'image/png': blob });
+        navigator.clipboard.write([item]).then(function() {
+          var toast = document.getElementById('screenshot-toast');
+          toast.style.display = 'block';
+          setTimeout(function() { toast.style.display = 'none'; }, 2000);
+        }).catch(function() {
+          var link = document.createElement('a');
+          link.download = 'SKhN-' + (document.getElementById('itemName').value || 'order') + '.png';
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      });
+    });
+  }
+
+  /* ======================================================
+     ORDERS
+     ====================================================== */
+  var currentOrderFilter = 'all';
+  var editingOrderId = null;
+
+  var STATUS_LABELS = { new: 'Новый', print: 'Печатается', done: 'Готово', given: 'Отдано' };
+  var STATUS_CLASS  = { new: 'active-new', print: 'active-print', done: 'active-done', given: 'active-given' };
+  var PAY_LABELS    = { unpaid: 'Не оплачено', partial: 'Частично', paid: 'Оплачено' };
+  var PAY_CLASS     = { unpaid: 'pay-unpaid', partial: 'pay-partial', paid: 'pay-paid' };
+
+  function getOrders()   { return JSON.parse(localStorage.getItem('skhn_orders') || '[]'); }
+  function saveOrders(o) { localStorage.setItem('skhn_orders', JSON.stringify(o)); }
+
+  function openOrderModal(id) {
+    editingOrderId = id || null;
+    var modal = document.getElementById('modal-order');
+    if (id) {
+      var o = getOrders().find(function(x){ return x.id === id; });
+      if (o) {
+        document.getElementById('order-modal-title').textContent = 'Редактировать заказ';
+        document.getElementById('f-customer').value  = o.customer || '';
+        document.getElementById('f-name').value      = o.name || '';
+        document.getElementById('f-material').value  = o.material || '';
+        document.getElementById('f-color').value     = o.color || '#1565C0';
+        document.getElementById('f-colorname').value = o.colorname || '';
+        document.getElementById('f-weight').value    = o.weight || '';
+        document.getElementById('f-hours').value     = o.hours || '';
+        document.getElementById('f-price').value     = o.price || '';
+        document.getElementById('f-status').value    = o.status  || 'new';
+        document.getElementById('f-payment').value   = o.payment || 'unpaid';
+        document.getElementById('f-notes').value     = o.notes   || '';
+      }
+    } else {
+      document.getElementById('order-modal-title').textContent = 'Новый заказ';
+      document.getElementById('f-customer').value  = '';
+      document.getElementById('f-name').value      = '';
+      document.getElementById('f-material').value  = '';
+      document.getElementById('f-color').value     = '#1565C0';
+      document.getElementById('f-colorname').value = '';
+      document.getElementById('f-weight').value    = '';
+      document.getElementById('f-hours').value     = '';
+      document.getElementById('f-price').value     = '';
+      document.getElementById('f-status').value    = 'new';
+      document.getElementById('f-payment').value   = 'unpaid';
+      document.getElementById('f-notes').value     = '';
+    }
+    modal.classList.add('open');
+    document.getElementById('f-customer').focus();
+  }
+
+  function closeOrderModal() {
+    document.getElementById('modal-order').classList.remove('open');
+    editingOrderId = null;
+  }
+
+  function saveOrder() {
+    var customer = document.getElementById('f-customer').value.trim();
+    var name     = document.getElementById('f-name').value.trim();
+    if (!customer || !name) { alert('Укажите имя заказчика и название детали'); return; }
+
+    var orders = getOrders();
+    var entry = {
+      id:        editingOrderId || Date.now(),
+      customer:  customer,
+      name:      name,
+      material:  document.getElementById('f-material').value.trim(),
+      color:     document.getElementById('f-color').value,
+      colorname: document.getElementById('f-colorname').value.trim(),
+      weight:    document.getElementById('f-weight').value,
+      hours:     document.getElementById('f-hours').value,
+      price:     document.getElementById('f-price').value,
+      status:    document.getElementById('f-status').value,
+      payment:   document.getElementById('f-payment').value,
+      notes:     document.getElementById('f-notes').value.trim(),
+      date:      editingOrderId
+        ? (orders.find(function(x){return x.id===editingOrderId;})||{}).date || new Date().toLocaleDateString('ru-RU')
+        : new Date().toLocaleDateString('ru-RU', { day:'numeric', month:'short', year:'numeric' })
+    };
+
+    if (editingOrderId) {
+      var idx = orders.findIndex(function(x){ return x.id === editingOrderId; });
+      if (idx !== -1) orders[idx] = entry;
+    } else {
+      orders.unshift(entry);
+    }
+
+    saveOrders(orders);
+    closeOrderModal();
+    renderOrders();
+  }
+
+  function setOrderStatus(id, status) {
+    var orders = getOrders();
+    var o = orders.find(function(x){ return x.id === id; });
+    if (o) { o.status = status; saveOrders(orders); renderOrders(); }
+  }
+
+  function toggleOrderPayment(id) {
+    var orders = getOrders();
+    var o = orders.find(function(x){ return x.id === id; });
+    if (!o) return;
+    var cycle = { unpaid: 'partial', partial: 'paid', paid: 'unpaid' };
+    o.payment = cycle[o.payment || 'unpaid'];
+    saveOrders(orders); renderOrders();
+  }
+
+  function deleteOrder(id) {
+    if (!confirm('Удалить заказ?')) return;
+    saveOrders(getOrders().filter(function(x){ return x.id !== id; }));
+    renderOrders();
+  }
+
+  function setOrderFilter(f, btn) {
+    currentOrderFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderOrders();
+  }
+
+  function renderOrders() {
+    var orders = getOrders();
+
+    document.getElementById('st-new').textContent   = orders.filter(function(o){ return o.status==='new'; }).length;
+    document.getElementById('st-print').textContent = orders.filter(function(o){ return o.status==='print'; }).length;
+    document.getElementById('st-done').textContent  = orders.filter(function(o){ return o.status==='done'; }).length;
+    document.getElementById('st-given').textContent = orders.filter(function(o){ return o.status==='given'; }).length;
+
+    var filtered = currentOrderFilter === 'all' ? orders : orders.filter(function(o){ return o.status === currentOrderFilter; });
+
+    var list = document.getElementById('orders-list');
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Заказов нет</p></div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    filtered.forEach(function(o) {
+      var card = document.createElement('div');
+      card.className = 'order-card';
+
+      var statuses = ['new','print','done','given'];
+      var btnHtml = statuses.map(function(s) {
+        var cls = o.status === s ? STATUS_CLASS[s] : '';
+        return '<button class="status-btn ' + cls + '" onclick="setOrderStatus(' + o.id + ',\'' + s + '\')">' + STATUS_LABELS[s] + '</button>';
+      }).join('');
+
+      var meta = [o.material, o.colorname, o.weight ? o.weight+'г' : '', o.hours ? o.hours+'ч' : ''].filter(Boolean).join(' · ');
+
+      card.innerHTML =
+        '<div class="order-top">' +
+          '<div class="order-dot" style="background:' + (o.color||'#ccc') + ';box-shadow:0 2px 8px ' + (o.color||'#ccc') + '55;"></div>' +
+          '<div class="order-info">' +
+            '<div class="order-name">' + o.name + '</div>' +
+            '<div class="order-meta">' + (meta || '—') + '</div>' +
+            (o.notes ? '<div class="order-meta" style="color:#bbb;font-style:italic;">' + o.notes + '</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div class="order-price">' + (o.price ? o.price+' TJS' : '—') + '</div>' +
+            '<button class="pay-btn ' + PAY_CLASS[o.payment||'unpaid'] + '" onclick="toggleOrderPayment(' + o.id + ');event.stopPropagation();" style="margin-top:5px;">' + PAY_LABELS[o.payment||'unpaid'] + '</button>' +
+          '</div>' +
+          '<button class="del-btn" onclick="deleteOrder(' + o.id + ')" ondblclick="event.stopPropagation()">×</button>' +
+        '</div>' +
+        '<div class="order-bottom">' +
+          '<div>' +
+            '<div class="customer-name">' + o.customer + '</div>' +
+            '<div class="customer-date">' + o.date + '</div>' +
+          '</div>' +
+          '<div class="status-btns">' + btnHtml + '</div>' +
+        '</div>';
+
+      card.querySelector('.order-top').addEventListener('dblclick', function(){ openOrderModal(o.id); });
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById('modal-order').addEventListener('click', function(e){
+    if (e.target === this) closeOrderModal();
+  });
+
+  /* ======================================================
+     FINANCE
+     ====================================================== */
+  var activeFinanceTab = 'expenses';
+  var editingExpenseId = null;
+  var editingSpoolId   = null;
+  var spoolSteps       = {};
+
+  function getExpenses()   { return JSON.parse(localStorage.getItem('skhn_expenses') || '[]'); }
+  function getSpools()     { return JSON.parse(localStorage.getItem('skhn_spools')   || '[]'); }
+  function saveExpenses(d) { localStorage.setItem('skhn_expenses', JSON.stringify(d)); }
+  function saveSpools(d)   { localStorage.setItem('skhn_spools',   JSON.stringify(d)); }
+
+  var CAT_LABELS = { filament: 'Филамент', cargo: 'Карго', parts: 'Запчасти', other: 'Другое' };
+  var CAT_CLASS  = { filament: 'cat-filament', cargo: 'cat-cargo', parts: 'cat-parts', other: 'cat-other' };
+
+  function switchFinanceTab(tab, el) {
+    activeFinanceTab = tab;
+    document.querySelectorAll('.finance-tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.finance-tab-content').forEach(function(t){ t.classList.remove('active'); });
+    el.classList.add('active');
+    document.getElementById('fin-tab-' + tab).classList.add('active');
+    document.getElementById('finance-header-add').textContent = tab === 'expenses' ? '+ Расход' : '+ Катушка';
+  }
+
+  function openActiveFinanceModal() {
+    if (activeFinanceTab === 'expenses') openFinanceModal('expense');
+    else openFinanceModal('spool');
+  }
+
+  function openFinanceModal(type, id) {
+    var today = new Date().toISOString().split('T')[0];
+    if (type === 'expense') {
+      editingExpenseId = id || null;
+      document.querySelector('#modal-expense .modal-title').textContent = id ? 'Редактировать расход' : 'Новый расход';
+      if (id) {
+        var exp = getExpenses().find(function(x){ return x.id === id; });
+        if (exp) {
+          document.getElementById('e-desc').value   = exp.desc;
+          document.getElementById('e-cat').value    = exp.cat;
+          document.getElementById('e-amount').value = exp.amount;
+          document.getElementById('e-date').value   = exp.date;
+        }
+      } else {
+        document.getElementById('e-desc').value   = '';
+        document.getElementById('e-cat').value    = 'filament';
+        document.getElementById('e-amount').value = '';
+        document.getElementById('e-date').value   = today;
+      }
+    } else {
+      editingSpoolId = id || null;
+      document.querySelector('#modal-spool .modal-title').textContent = id ? 'Редактировать катушку' : 'Добавить катушку';
+      if (id) {
+        var sp = getSpools().find(function(x){ return x.id === id; });
+        if (sp) {
+          document.getElementById('sp-material').value  = sp.material;
+          document.getElementById('sp-color').value     = sp.color;
+          document.getElementById('sp-colorname').value = sp.colorname;
+          document.getElementById('sp-remaining').value = sp.remaining;
+          document.getElementById('sp-total').value     = sp.total;
+          document.getElementById('sp-cost').value      = sp.cost;
+          document.getElementById('sp-date').value      = sp.date;
+        }
+      } else {
+        document.getElementById('sp-material').value  = 'PETG';
+        document.getElementById('sp-color').value     = '#1565C0';
+        document.getElementById('sp-colorname').value = '';
+        document.getElementById('sp-remaining').value = '1000';
+        document.getElementById('sp-total').value     = '1000';
+        document.getElementById('sp-cost').value      = '90';
+        document.getElementById('sp-date').value      = today;
+      }
+    }
+    document.getElementById('modal-' + type).classList.add('open');
+  }
+
+  function closeFinanceModal(type) {
+    document.getElementById('modal-' + type).classList.remove('open');
+  }
+
+  function saveExpense() {
+    var desc   = document.getElementById('e-desc').value.trim();
+    var amount = parseFloat(document.getElementById('e-amount').value) || 0;
+    if (!desc || !amount) { alert('Укажите описание и сумму'); return; }
+    var expenses = getExpenses();
+    var entry = {
+      id:     editingExpenseId || Date.now(),
+      desc:   desc,
+      cat:    document.getElementById('e-cat').value,
+      amount: amount,
+      date:   document.getElementById('e-date').value
+    };
+    if (editingExpenseId) {
+      var idx = expenses.findIndex(function(x){ return x.id === editingExpenseId; });
+      if (idx !== -1) expenses[idx] = entry;
+    } else {
+      expenses.unshift(entry);
+    }
+    saveExpenses(expenses);
+    closeFinanceModal('expense');
+    renderFinance();
+  }
+
+  function deleteExpense(id) {
+    if (!confirm('Удалить расход?')) return;
+    saveExpenses(getExpenses().filter(function(x){ return x.id !== id; }));
+    renderFinance();
+  }
+
+  function saveSpool() {
+    var material = document.getElementById('sp-material').value.trim();
+    if (!material) { alert('Укажите материал'); return; }
+    var spools = getSpools();
+    var entry = {
+      id:        editingSpoolId || Date.now(),
+      material:  material,
+      color:     document.getElementById('sp-color').value,
+      colorname: document.getElementById('sp-colorname').value.trim(),
+      remaining: parseFloat(document.getElementById('sp-remaining').value) || 1000,
+      total:     parseFloat(document.getElementById('sp-total').value) || 1000,
+      cost:      parseFloat(document.getElementById('sp-cost').value) || 0,
+      date:      document.getElementById('sp-date').value
+    };
+    if (editingSpoolId) {
+      var idx = spools.findIndex(function(x){ return x.id === editingSpoolId; });
+      if (idx !== -1) spools[idx] = entry;
+    } else {
+      spools.unshift(entry);
+    }
+    saveSpools(spools);
+    closeFinanceModal('spool');
+    renderFinance();
+  }
+
+  function deleteSpool(id) {
+    if (!confirm('Удалить катушку?')) return;
+    saveSpools(getSpools().filter(function(x){ return x.id !== id; }));
+    renderFinance();
+  }
+
+  function updateRemaining(id, sign) {
+    var stepEl = document.getElementById('step-' + id);
+    var step = parseFloat(stepEl ? stepEl.value : 100) || 100;
+    spoolSteps[id] = step;
+    var spools = getSpools();
+    var s = spools.find(function(x){ return x.id === id; });
+    if (s) {
+      s.remaining = Math.max(0, Math.min(s.total, s.remaining + sign * step));
+      saveSpools(spools);
+      renderFinance();
+    }
+  }
+
+  function exportData() {
+    var data = {
+      skhn_orders:   JSON.parse(localStorage.getItem('skhn_orders')   || '[]'),
+      skhn_expenses: JSON.parse(localStorage.getItem('skhn_expenses') || '[]'),
+      skhn_spools:   JSON.parse(localStorage.getItem('skhn_spools')   || '[]'),
+      print_history: JSON.parse(localStorage.getItem('print_history') || '[]'),
+      exported: new Date().toISOString()
+    };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'skhn-backup-' + new Date().toLocaleDateString('ru-RU').replace(/\./g, '-') + '.json';
+    link.click();
+  }
+
+  function importData(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = JSON.parse(e.target.result);
+        if (data.skhn_orders)   localStorage.setItem('skhn_orders',   JSON.stringify(data.skhn_orders));
+        if (data.skhn_expenses) localStorage.setItem('skhn_expenses', JSON.stringify(data.skhn_expenses));
+        if (data.skhn_spools)   localStorage.setItem('skhn_spools',   JSON.stringify(data.skhn_spools));
+        if (data.print_history) localStorage.setItem('print_history', JSON.stringify(data.print_history));
+        renderFinance();
+        renderOrders();
+        renderHistory();
+        alert('Данные восстановлены!');
+      } catch(err) {
+        alert('Ошибка: неверный файл');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    var parts = d.split('-');
+    var months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return parts[2] + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0];
+  }
+
+  function renderFinance() {
+    var orders   = getOrders();
+    var expenses = getExpenses();
+    var income   = orders.filter(function(o){ return o.payment === 'paid'; })
+                         .reduce(function(s, o){ return s + (parseFloat(o.price)||0); }, 0);
+    var totalExp = expenses.reduce(function(s, e){ return s + (parseFloat(e.amount)||0); }, 0);
+    var profit   = income - totalExp;
+
+    document.getElementById('s-income').textContent  = income  + ' TJS';
+    document.getElementById('s-expense').textContent = totalExp + ' TJS';
+    document.getElementById('s-profit').textContent  = profit  + ' TJS';
+    document.getElementById('s-profit').style.color  = profit >= 0 ? '#1a1a1a' : '#e53935';
+    document.getElementById('s-income-sub').textContent  = orders.filter(function(o){ return o.payment==='paid'; }).length + ' оплаченных заказов';
+    document.getElementById('s-expense-sub').textContent = expenses.length + ' записей';
+
+    var eList = document.getElementById('expenses-list');
+    if (expenses.length === 0) {
+      eList.innerHTML = '<div class="empty-state"><div class="icon">💸</div><p>Расходов нет</p></div>';
+    } else {
+      eList.innerHTML = '';
+      expenses.forEach(function(e) {
+        var card = document.createElement('div');
+        card.className = 'fin-card';
+        card.innerHTML =
+          '<div class="card-row">' +
+            '<span class="cat-badge ' + (CAT_CLASS[e.cat]||'cat-other') + '">' + (CAT_LABELS[e.cat]||'Другое') + '</span>' +
+            '<div class="card-info">' +
+              '<div class="card-name">' + e.desc + '</div>' +
+              '<div class="card-meta">' + formatDate(e.date) + '</div>' +
+            '</div>' +
+            '<div class="card-amount">−' + e.amount + ' TJS</div>' +
+            '<button class="del-btn" onclick="openFinanceModal(\'expense\',' + e.id + ')" style="color:#bbb;font-size:14px;" title="Редактировать">✎</button>' +
+            '<button class="del-btn" onclick="deleteExpense(' + e.id + ')">×</button>' +
+          '</div>';
+        eList.appendChild(card);
+      });
+    }
+
+    var sList = document.getElementById('inventory-list');
+    var spools = getSpools();
+    if (spools.length === 0) {
+      sList.innerHTML = '<div class="empty-state"><div class="icon">🧵</div><p>Катушек нет</p></div>';
+    } else {
+      sList.innerHTML = '';
+      spools.forEach(function(s) {
+        var pct = Math.round((s.remaining / s.total) * 100);
+        var card = document.createElement('div');
+        card.className = 'spool-card';
+        card.innerHTML =
+          '<div class="spool-top">' +
+            '<div class="spool-dot" style="background:' + s.color + ';box-shadow:0 2px 8px ' + s.color + '55;"></div>' +
+            '<div class="spool-info">' +
+              '<div class="spool-name">' + s.material + ' · ' + (s.colorname||'') + '</div>' +
+              '<div class="spool-meta">куплено: ' + formatDate(s.date) + (s.cost ? ' · ' + s.cost + ' TJS' : '') + '</div>' +
+            '</div>' +
+            '<button class="del-btn" onclick="openFinanceModal(\'spool\',' + s.id + ')" style="color:#bbb;font-size:14px;" title="Редактировать">✎</button>' +
+            '<button class="del-btn" onclick="deleteSpool(' + s.id + ')">×</button>' +
+          '</div>' +
+          '<div class="spool-bottom">' +
+            '<div class="progress-wrap">' +
+              '<div class="progress-label"><span>Остаток: ' + s.remaining + ' г</span><span>' + pct + '%</span></div>' +
+              '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + s.color + ';"></div></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:4px;align-items:center;margin-left:12px;">' +
+              '<button onclick="updateRemaining(' + s.id + ',-1)" style="border:1.5px solid #e8e8e8;background:#fff;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:14px;font-weight:700;color:#666;line-height:1;">−</button>' +
+              '<input id="step-' + s.id + '" type="number" value="' + (spoolSteps[s.id] || 100) + '" min="1" style="width:56px;padding:4px 6px;border:1.5px solid #e8e8e8;border-radius:6px;font-size:12px;font-weight:600;text-align:center;-moz-appearance:textfield;" oninput="this.value=Math.max(1,parseInt(this.value)||1)">' +
+              '<button onclick="updateRemaining(' + s.id + ',1)" style="border:1.5px solid #e8e8e8;background:#fff;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:14px;font-weight:700;color:#666;line-height:1;">+</button>' +
+            '</div>' +
+          '</div>';
+        sList.appendChild(card);
+      });
+    }
+  }
+
+  ['modal-expense','modal-spool'].forEach(function(mid) {
+    document.getElementById(mid).addEventListener('click', function(e){
+      if (e.target === this) closeFinanceModal(mid.replace('modal-',''));
+    });
+  });
+
+  /* ======================================================
+     INIT
+     ====================================================== */
+  (function() {
+    var now = new Date();
+    var el = document.getElementById('c-date');
+    if (el) el.textContent = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  })();
+
+  calc();
+  renderHistory();
+  renderOrders();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+</body>
+</html>
