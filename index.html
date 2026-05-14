@@ -1947,10 +1947,10 @@
     reader.onload = function(e) {
       try {
         var data = JSON.parse(e.target.result);
-        if (data.skhn_orders)   { _orders   = toArray(data.skhn_orders);   db.ref('data/orders').set(_orders); }
-        if (data.skhn_expenses) { _expenses = toArray(data.skhn_expenses); db.ref('data/expenses').set(_expenses); }
-        if (data.skhn_spools)   { _spools   = toArray(data.skhn_spools);   db.ref('data/spools').set(_spools); }
-        if (data.print_history) { _history  = toArray(data.print_history); db.ref('data/history').set(_history); }
+        if (data.skhn_orders)   { _orders   = toArray(data.skhn_orders);   localStorage.setItem('skhn_orders',   JSON.stringify(_orders));   if(db) db.ref('data/orders').set(_orders); }
+        if (data.skhn_expenses) { _expenses = toArray(data.skhn_expenses); localStorage.setItem('skhn_expenses', JSON.stringify(_expenses)); if(db) db.ref('data/expenses').set(_expenses); }
+        if (data.skhn_spools)   { _spools   = toArray(data.skhn_spools);   localStorage.setItem('skhn_spools',   JSON.stringify(_spools));   if(db) db.ref('data/spools').set(_spools); }
+        if (data.print_history) { _history  = toArray(data.print_history); localStorage.setItem('print_history', JSON.stringify(_history)); if(db) db.ref('data/history').set(_history); }
         renderFinance();
         renderOrders();
         renderHistory();
@@ -2079,7 +2079,20 @@
       firebase.initializeApp(firebaseConfig);
       db = firebase.database();
       db.ref('data').on('value', function(snap) {
-        var d = snap.val() || {};
+        var d = snap.val();
+        // Если Firebase пустой, но в localStorage есть данные — загружаем в Firebase
+        if (!d || (!d.orders && !d.expenses && !d.spools && !d.history)) {
+          var localOrders   = JSON.parse(localStorage.getItem('skhn_orders')   || '[]');
+          var localExpenses = JSON.parse(localStorage.getItem('skhn_expenses') || '[]');
+          var localSpools   = JSON.parse(localStorage.getItem('skhn_spools')   || '[]');
+          var localHistory  = JSON.parse(localStorage.getItem('print_history') || '[]');
+          if (localOrders.length || localExpenses.length || localSpools.length || localHistory.length) {
+            db.ref('data').set({ orders: localOrders, expenses: localExpenses, spools: localSpools, history: localHistory });
+          } else {
+            renderHistory(); renderOrders(); renderFinance();
+          }
+          return;
+        }
         _orders   = toArray(d.orders);
         _expenses = toArray(d.expenses);
         _spools   = toArray(d.spools);
