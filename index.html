@@ -736,6 +736,10 @@
     .form-field input::-webkit-inner-spin-button,
     .form-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
+    .form-field input.field-error, .form-field select.field-error, .form-field textarea.field-error {
+      border-color: #e53935 !important; background: #fff5f5;
+    }
+    .form-field input.field-error:focus, .form-field select.field-error:focus { border-color: #e53935; }
     .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
       outline: none; border-color: #1a1a1a; background: #fff;
     }
@@ -1129,42 +1133,42 @@
       <div class="form-row">
         <div class="form-field full">
           <label>Имя заказчика</label>
-          <input type="text" id="f-customer" placeholder="Например: Алишер">
+          <input type="text" id="f-customer" placeholder="Например: Алишер" oninput="this.classList.remove('field-error')">
         </div>
       </div>
       <div class="form-row">
         <div class="form-field full">
           <label>Название детали</label>
-          <input type="text" id="f-name" placeholder="Например: Mug Holder">
+          <input type="text" id="f-name" placeholder="Например: Mug Holder" oninput="this.classList.remove('field-error')">
         </div>
       </div>
       <div class="form-row">
         <div class="form-field">
           <label>Материал</label>
-          <input type="text" id="f-material" placeholder="PETG, PLA...">
+          <input type="text" id="f-material" placeholder="PETG, PLA..." oninput="this.classList.remove('field-error')">
         </div>
         <div class="form-field">
           <label>Цвет</label>
           <div class="color-row">
             <input type="color" id="f-color" value="#1565C0">
-            <input type="text" id="f-colorname" placeholder="Синий">
+            <input type="text" id="f-colorname" placeholder="Синий" oninput="this.classList.remove('field-error')">
           </div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-field">
           <label>Вес (г)</label>
-          <input type="number" id="f-weight" placeholder="265">
+          <input type="number" id="f-weight" placeholder="265" oninput="this.classList.remove('field-error')">
         </div>
         <div class="form-field">
           <label>Время печати (ч)</label>
-          <input type="number" id="f-hours" placeholder="12.4" step="0.1">
+          <input type="number" id="f-hours" placeholder="12.4" step="0.1" oninput="this.classList.remove('field-error')">
         </div>
       </div>
       <div class="form-row">
         <div class="form-field">
           <label>Цена (TJS)</label>
-          <input type="number" id="f-price" placeholder="69">
+          <input type="number" id="f-price" placeholder="69" oninput="this.classList.remove('field-error')">
         </div>
         <div class="form-field">
           <label>Статус</label>
@@ -1639,6 +1643,9 @@
       document.getElementById('f-payment').value   = 'unpaid';
       document.getElementById('f-notes').value     = '';
     }
+    ['f-customer','f-name','f-material','f-colorname','f-weight','f-hours','f-price'].forEach(function(id){
+      document.getElementById(id).classList.remove('field-error');
+    });
     modal.classList.add('open');
     document.getElementById('f-customer').focus();
   }
@@ -1649,9 +1656,29 @@
   }
 
   function saveOrder() {
-    var customer = document.getElementById('f-customer').value.trim();
-    var name     = document.getElementById('f-name').value.trim();
-    if (!customer || !name) { alert('Укажите имя заказчика и название детали'); return; }
+    var customer  = document.getElementById('f-customer').value.trim();
+    var name      = document.getElementById('f-name').value.trim();
+    var material  = document.getElementById('f-material').value.trim();
+    var colorname = document.getElementById('f-colorname').value.trim();
+    var weight    = document.getElementById('f-weight').value.trim();
+    var hours     = document.getElementById('f-hours').value.trim();
+    var price     = document.getElementById('f-price').value.trim();
+    var requiredFields = [
+      { id: 'f-customer',  val: customer },
+      { id: 'f-name',      val: name },
+      { id: 'f-material',  val: material },
+      { id: 'f-colorname', val: colorname },
+      { id: 'f-weight',    val: weight },
+      { id: 'f-hours',     val: hours },
+      { id: 'f-price',     val: price }
+    ];
+    var firstEmpty = null;
+    requiredFields.forEach(function(f) {
+      var el = document.getElementById(f.id);
+      if (!f.val) { el.classList.add('field-error'); if (!firstEmpty) firstEmpty = el; }
+      else        { el.classList.remove('field-error'); }
+    });
+    if (firstEmpty) { firstEmpty.focus(); return; }
 
     var orders = getOrders();
     var entry = {
