@@ -2044,4 +2044,59 @@
     }
   }
 
-  ['modal-expense','modal-spool'].forEach(f
+  ['modal-expense','modal-spool'].forEach(function(mid) {
+    document.getElementById(mid).addEventListener('click', function(e){
+      if (e.target === this) closeFinanceModal(mid.replace('modal-',''));
+    });
+  });
+
+  /* ======================================================
+     INIT
+     ====================================================== */
+  (function() {
+    var now = new Date();
+    var el = document.getElementById('c-date');
+    if (el) el.textContent = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  })();
+
+  calc();
+  renderOrders();
+  renderFinance();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  (function() {
+    try {
+      var firebaseConfig = {
+        apiKey: "AIzaSyCi2J4l8B_9Kx7lzgyZZ3qS6yuvmLpzSwo",
+        authDomain: "skhn-3d.firebaseapp.com",
+        databaseURL: "https://skhn-3d-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "skhn-3d",
+        storageBucket: "skhn-3d.firebasestorage.app",
+        messagingSenderId: "594271527292",
+        appId: "1:594271527292:web:2d1414dff3539f139004f9"
+      };
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      db.ref('data').on('value', function(snap) {
+        var d = snap.val() || {};
+        _orders   = toArray(d.orders);
+        _expenses = toArray(d.expenses);
+        _spools   = toArray(d.spools);
+        _history  = toArray(d.history);
+        localStorage.setItem('skhn_orders',   JSON.stringify(_orders));
+        localStorage.setItem('skhn_expenses', JSON.stringify(_expenses));
+        localStorage.setItem('skhn_spools',   JSON.stringify(_spools));
+        localStorage.setItem('print_history', JSON.stringify(_history));
+        renderHistory();
+        renderOrders();
+        renderFinance();
+      });
+    } catch(e) {
+      console.warn('Firebase недоступен, работаю с localStorage:', e);
+    }
+  })();
+</script>
+
+</body>
+</html>
