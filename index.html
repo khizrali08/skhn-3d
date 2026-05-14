@@ -1295,41 +1295,19 @@
 
 <script>
   /* ======================================================
-     FIREBASE INIT
+     LOCAL DATA CACHE (Firebase sync подключается в конце)
      ====================================================== */
-  var firebaseConfig = {
-    apiKey: "AIzaSyCi2J4l8B_9Kx7lzgyZZ3qS6yuvmLpzSwo",
-    authDomain: "skhn-3d.firebaseapp.com",
-    databaseURL: "https://skhn-3d-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "skhn-3d",
-    storageBucket: "skhn-3d.firebasestorage.app",
-    messagingSenderId: "594271527292",
-    appId: "1:594271527292:web:2d1414dff3539f139004f9"
-  };
-  firebase.initializeApp(firebaseConfig);
-  var db = firebase.database();
-
-  var _orders   = [];
-  var _expenses = [];
-  var _spools   = [];
-  var _history  = [];
+  var _orders   = JSON.parse(localStorage.getItem('skhn_orders')   || '[]');
+  var _expenses = JSON.parse(localStorage.getItem('skhn_expenses') || '[]');
+  var _spools   = JSON.parse(localStorage.getItem('skhn_spools')   || '[]');
+  var _history  = JSON.parse(localStorage.getItem('print_history') || '[]');
+  var db = null;
 
   function toArray(v) {
     if (!v) return [];
     if (Array.isArray(v)) return v.filter(Boolean);
     return Object.values(v).filter(Boolean);
   }
-
-  db.ref('data').on('value', function(snap) {
-    var d = snap.val() || {};
-    _orders   = toArray(d.orders);
-    _expenses = toArray(d.expenses);
-    _spools   = toArray(d.spools);
-    _history  = toArray(d.history);
-    renderHistory();
-    if (currentTab === 'orders')  renderOrders();
-    if (currentTab === 'finance') renderFinance();
-  });
 
   /* ======================================================
      TAB NAVIGATION
@@ -1538,7 +1516,8 @@
 
     _history.unshift(entry);
     if (_history.length > 50) _history = _history.slice(0, 50);
-    db.ref('data/history').set(_history);
+    localStorage.setItem('print_history', JSON.stringify(_history));
+    if(db) db.ref('data/history').set(_history);
 
     renderHistory();
     var btn = document.getElementById('save-history-btn');
@@ -1548,14 +1527,16 @@
 
   function deleteFromHistory(id) {
     _history = _history.filter(function(e) { return e.id !== id; });
-    db.ref('data/history').set(_history);
+    localStorage.setItem('print_history', JSON.stringify(_history));
+    if(db) db.ref('data/history').set(_history);
     renderHistory();
   }
 
   function clearHistory() {
     if (confirm('Очистить всю историю?')) {
       _history = [];
-      db.ref('data/history').set([]);
+      localStorage.removeItem('print_history');
+      if(db) db.ref('data/history').set([]);
       renderHistory();
     }
   }
@@ -1623,7 +1604,7 @@
   var PAY_CLASS     = { unpaid: 'pay-unpaid', partial: 'pay-partial', paid: 'pay-paid' };
 
   function getOrders()   { return _orders; }
-  function saveOrders(o) { _orders = o; db.ref('data/orders').set(o || []); }
+  function saveOrders(o) { _orders = o; localStorage.setItem('skhn_orders', JSON.stringify(o)); if(db) db.ref('data/orders').set(o || []); }
 
   function openOrderModal(id) {
     editingOrderId = id || null;
@@ -1801,8 +1782,8 @@
 
   function getExpenses()   { return _expenses; }
   function getSpools()     { return _spools; }
-  function saveExpenses(d) { _expenses = d; db.ref('data/expenses').set(d || []); }
-  function saveSpools(d)   { _spools   = d; db.ref('data/spools').set(d || []); }
+  function saveExpenses(d) { _expenses = d; localStorage.setItem('skhn_expenses', JSON.stringify(d)); if(db) db.ref('data/expenses').set(d || []); }
+  function saveSpools(d)   { _spools   = d; localStorage.setItem('skhn_spools',   JSON.stringify(d)); if(db) db.ref('data/spools').set(d || []); }
 
   var CAT_LABELS = { filament: 'Филамент', cargo: 'Карго', parts: 'Запчасти', other: 'Другое' };
   var CAT_CLASS  = { filament: 'cat-filament', cargo: 'cat-cargo', parts: 'cat-parts', other: 'cat-other' };
@@ -2057,4 +2038,10 @@
               '<input id="step-' + s.id + '" type="number" value="' + (spoolSteps[s.id] || 100) + '" min="1" style="width:56px;padding:4px 6px;border:1.5px solid #e8e8e8;border-radius:6px;font-size:12px;font-weight:600;text-align:center;-moz-appearance:textfield;" oninput="this.value=Math.max(1,parseInt(this.value)||1)">' +
               '<button onclick="updateRemaining(' + s.id + ',1)" style="border:1.5px solid #e8e8e8;background:#fff;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:14px;font-weight:700;color:#666;line-height:1;">+</button>' +
             '</div>' +
-        
+          '</div>';
+        sList.appendChild(card);
+      });
+    }
+  }
+
+  ['modal-expense','modal-spool'].forEach(f
